@@ -22,7 +22,7 @@ def read_api_key():                                           # .env 에서 키�
     with open(find_env(), encoding="utf-8") as f:             # .env 를 찾아 읽기로 연다
         for line in f:                                        # 파일을 한 줄씩 꺼낸다
             parts = line.strip().split("=", 1)                # 줄 끝 공백을 지우고 = 에서 둘로 나눈다
-            if parts[0] == "API_KEY":                  # = 앞부분이 키 이름이면
+            if parts[0] in ("API_KEY", "GEMINI_API_KEY"):                  # = 앞부분이 키 이름이면
                 api_key = parts[1]                            # = 뒷부분이 키 값이다
     return api_key                                            # 읽은 키를 돌려준다
 
@@ -30,20 +30,10 @@ def read_api_key():                                           # .env 에서 키�
 def call_llm(question):                                       # 질문을 받아 답 문장을 돌려주는 함수
     # 요청 헤더 — .env 에서 읽은 키를 넣는다
     headers = {"Authorization": "Bearer " + read_api_key(), "Content-Type": "application/json"}
-    # 1. body 라는 변수를 만들어 MODEL, temperature 0, question 을 넣은 본문을 담으세요
-    body = {
-        "model": MODEL, 
-        "temperature": 0, 
-        "messages": [
-            {"role": "user", "content": question}
-        ]
-    }
-
-
-
-    # 2. response 라는 변수를 만들어 URL 로 보낸 POST 요청의 결과를 담으세요
-    response = requests.post(URL, headers=headers, json=body, timeout=120)
-
+    # 요청 본문 — 모델 · temperature 0 · 질문
+    body = {"model": MODEL, "temperature": 0, "messages": [{"role": "user", "content": question}]}
+    # POST 요청을 보낸다. 30초 안에 답이 없으면 멈춘다
+    response = requests.post(URL, headers=headers, json=body, timeout=30)
     if response.status_code != 200:                           # 200(성공)이 아니면
         print("[LLM 호출 실패] 상태 코드", response.status_code)      # 429 면 1분 기다린 뒤 다시 실행
         return ""                                             # 실패하면 빈 문자열을 돌려준다
@@ -55,7 +45,6 @@ def parse_llm_json(text):                                     # LLM 의 답을 �
     clean = text.replace("```json", "")                       # 코드 블록 표시 ```json 을 지운다
     clean = clean.replace("```", "")                          # 남은 ``` 를 지운다
     clean = clean.strip()                                     # 앞뒤 공백 · 줄바꿈을 지운다
-
     try:                                                      # 아래 줄을 해 본다
         return json.loads(clean)                              # 문자열을 딕셔너리로 바꿔 돌려준다
     except json.JSONDecodeError:                              # JSON 으로 읽지 못하면 여기로 온다
