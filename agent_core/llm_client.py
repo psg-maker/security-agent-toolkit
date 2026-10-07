@@ -14,7 +14,7 @@ def find_env():                                               # .env 를 지금 
         if os.path.exists(path):                              # 그 파일이 있으면
             return path                                       # 찾은 경로를 돌려준다
         folder = os.path.dirname(folder)        # 한 칸 위 폴더
-    return None
+    return None                                               # 못 읽으면 None
 
 
 def read_api_key():                                           # .env 에서 키를 읽어 돌려주는 함수
@@ -22,7 +22,7 @@ def read_api_key():                                           # .env 에서 키�
     with open(find_env(), encoding="utf-8") as f:             # .env 를 찾아 읽기로 연다
         for line in f:                                        # 파일을 한 줄씩 꺼낸다
             parts = line.strip().split("=", 1)                # 줄 끝 공백을 지우고 = 에서 둘로 나눈다
-            if parts[0] in ("API_KEY", "GEMINI_API_KEY"):                  # = 앞부분이 키 이름이면
+            if parts[0] == "API_KEY":                  # = 앞부분이 키 이름이면
                 api_key = parts[1]                            # = 뒷부분이 키 값이다
     return api_key                                            # 읽은 키를 돌려준다
 
@@ -45,7 +45,8 @@ def parse_llm_json(text):                                     # LLM 의 답을 �
     clean = text.replace("```json", "")                       # 코드 블록 표시 ```json 을 지운다
     clean = clean.replace("```", "")                          # 남은 ``` 를 지운다
     clean = clean.strip()                                     # 앞뒤 공백 · 줄바꿈을 지운다
+
     try:                                                      # 아래 줄을 해 본다
         return json.loads(clean)                              # 문자열을 딕셔너리로 바꿔 돌려준다
     except json.JSONDecodeError:                              # JSON 으로 읽지 못하면 여기로 온다
-        return None
+        return None                                           # 못 읽으면 None
